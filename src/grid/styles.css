@@ -16,3 +16,16 @@
 .grid__control > input {
     margin-left: 12px;
 }
+
+@media only screen and (max-width: 768px) {
+    .grid__controls {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-bottom: 32px;
+    }
+
+    .grid__canvas {
+        touch-action: none;
+    }
+}

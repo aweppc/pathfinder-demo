@@ -1,6 +1,7 @@
 import React, {
     ChangeEventHandler,
     MouseEventHandler,
+    TouchEventHandler,
     useCallback,
     useEffect,
     useRef,
@@ -50,11 +51,22 @@ export const Grid = React.memo(({ onCellClick, onGrid }: Props) => {
                 lastDragRef.current = null;
             }
         };
+        const handleTouchDown = () => {
+            mouseIsDownRef.current = true;
+        };
+        const handleTouchUp = () => {
+            mouseIsDownRef.current = false;
+            lastDragRef.current = null;
+        };
         document.addEventListener('mousedown', handleMouseDown);
         document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('touchstart', handleTouchDown);
+        document.addEventListener('touchend', handleTouchUp);
         return () => {
             document.removeEventListener('mousedown', handleMouseDown);
             document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchstart', handleTouchDown);
+            document.removeEventListener('touchend', handleTouchUp);
         }
     }, []);
     const handleWidthChange = useCallback<ChangeEventHandler<HTMLInputElement>>((e) => {
@@ -79,7 +91,6 @@ export const Grid = React.memo(({ onCellClick, onGrid }: Props) => {
         }
     }, [forceUpdate]);
     const handleCanvasMouseOver = useCallback<MouseEventHandler<HTMLCanvasElement>>((e) => {
-        console.log(0);
         if (!mouseIsDownRef.current) {
             return;
         }
@@ -91,6 +102,24 @@ export const Grid = React.memo(({ onCellClick, onGrid }: Props) => {
         const rect = canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / pixelRatio);
         const y = Math.floor((e.clientY - rect.top) / pixelRatio);
+        if (lastDragRef.current && lastDragRef.current[0] === x && lastDragRef.current[1] === y) {
+            return;
+        }
+        lastDragRef.current = [x, y];
+        onCellClick?.(x, y);
+    }, [onCellClick]);
+    const handleCanvasTouchMove = useCallback<TouchEventHandler<HTMLCanvasElement>>((e) => {
+        if (!mouseIsDownRef.current) {
+            return;
+        }
+        const canvas = canvasRef.current;
+        const pixelRatio = pixelRatioRef.current;
+        if (!canvas || !pixelRatio) {
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.touches[0].clientX - rect.left) / pixelRatio);
+        const y = Math.floor((e.touches[0].clientY - rect.top) / pixelRatio);
         if (lastDragRef.current && lastDragRef.current[0] === x && lastDragRef.current[1] === y) {
             return;
         }
@@ -134,6 +163,7 @@ export const Grid = React.memo(({ onCellClick, onGrid }: Props) => {
                     <canvas
                         ref={canvasRef}
                         onMouseMove={handleCanvasMouseOver}
+                        onTouchMove={handleCanvasTouchMove}
                         width={width * pixelRatio}
                         height={height * pixelRatio}
                     />
