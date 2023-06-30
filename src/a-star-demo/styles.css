@@ -1,0 +1,18 @@
+.astardemo {
+    display: flex;
+    flex-direction: column;
+}
+
+.astardemo__controls {
+    margin-bottom: 24px;
+}
+
+.astardemo__mode-select {
+    border: none;
+    display: flex;
+    justify-content: center;
+}
+
+.astardemo__mode-select > *:not(:first-child) {
+    margin-left: 16px;
+}

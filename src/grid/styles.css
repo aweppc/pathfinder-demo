@@ -1,0 +1,18 @@
+.grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.grid__controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.grid__controls > *:not(:first-child) {
+    margin-left: 32px;
+}
+
+.grid__control > input {
+    margin-left: 12px;
+}
