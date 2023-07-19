@@ -1,3 +1,1 @@
-export type Predicate<T> = (arg: T) => boolean;
-
-export type Map<T, U> = (arg: T) => U;
+export type Predicate<T extends any[]> = (...args: T) => boolean;

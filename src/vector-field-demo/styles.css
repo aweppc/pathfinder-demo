@@ -1,18 +1,18 @@
-.a-star-demo {
+.vector-field-demo {
     display: flex;
     flex-direction: column;
 }
 
-.a-star-demo__controls {
+.vector-field-demo__controls {
     margin-bottom: 24px;
 }
 
-.a-star-demo__mode-select {
+.vector-field-demo__mode-select {
     border: none;
     display: flex;
     justify-content: center;
 }
 
-.a-star-demo__mode-select > *:not(:first-child) {
+.vector-field-demo__mode-select > *:not(:first-child) {
     margin-left: 16px;
 }

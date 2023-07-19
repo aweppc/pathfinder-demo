@@ -2,22 +2,23 @@ import React, { useCallback, useRef, useState } from 'react';
 import { v4 as createId } from 'uuid';
 import { Grid } from '../grid';
 import { Map } from '../internal/map';
-import { findPath } from '../internal/pathfinding/a-star';
+import { buildVectorField } from '../internal/pathfinding/verctor-field';
 import { GridPainter } from '../grid-painter';
 import { classname } from '../utils';
 import './styles.css';
+import { coordinateUtils } from '../internal/coordinates';
 
 type Mode = 'start' | 'end' | 'wall';
 
-const cn = classname('a-star-demo');
+const cn = classname('vector-field-demo');
 
-export const AStarDemo = React.memo(() => {
+export const VectorFieldDemo = React.memo(() => {
     const formId = useRef(createId());
     const startId = useRef(`${formId.current}-${createId()}`);
     const endId = useRef(`${formId.current}-${createId()}`);
     const wallId = useRef(`${formId.current}-${createId()}`);
     const modeRef = useRef<Mode>('wall');
-    const startRef = useRef<[number, number] | null>(null);
+    const startsRef = useRef<[number, number][]>([]);
     const endRef = useRef<[number, number] | null>(null);
     const painterRef = useRef<GridPainter | null>(null);
     const mapRef = useRef<Map | null>(null);
@@ -27,16 +28,16 @@ export const AStarDemo = React.memo(() => {
     const clearPath = useCallback(() => {
         const map = mapRef.current;
         const painter = painterRef.current;
-        const start = startRef.current;
+        const starts = startsRef.current;
         const end = endRef.current;
         if (!drawnRef.current || !map || !painter) {
             return;
         }
         painter.clearGrid();
         painter.drawGrid();
-        if (start) {
+        starts.forEach((start) => {
             painter.drawTile({ x: start[0], y: start[1], color: 'green' });
-        }
+        });
         if (end) {
             painter.drawTile({ x: end[0], y: end[1], color: 'cyan' });
         }
@@ -61,37 +62,36 @@ export const AStarDemo = React.memo(() => {
             return;
         }
         clearPath();
-        const start = startRef.current;
+        const starts = startsRef.current;
         const end = endRef.current;
         switch (modeRef.current) {
             case 'start': {
-                if (start) {
-                    painter.clearTile({ x: start[0], y: start[1] });
-                }
                 if (end && end[0] === x && end[1] === y) {
                     endRef.current = null;
                 }
-                startRef.current = [x, y];
                 map.clearWall(x, y);
-                painter.drawTile({ x, y, color: 'green' });
+                const exists = !!starts.find((start) => coordinateUtils.equals(start, [x, y]));
+                if (exists) {
+                    painter.clearTile({ x, y });
+                    startsRef.current = starts.filter((start) => !coordinateUtils.equals(start, [x, y]));
+                } else {
+                    painter.drawTile({ x, y, color: 'green' });
+                    startsRef.current = [...starts, [x, y]];
+                }
                 break;
             }
             case 'end': {
                 if (end) {
                     painter.clearTile({ x: end[0], y: end[1] });
                 }
-                if (start && start[0] === x && start[1] === y) {
-                    startRef.current = null;
-                }
+                startsRef.current = starts.filter((start) => !coordinateUtils.equals(start, [x, y]));
                 endRef.current = [x, y];
                 map.clearWall(x, y);
                 painter.drawTile({ x, y, color: 'cyan' });
                 break;
             }
             case 'wall': {
-                if (start && start[0] === x && start[1] === y) {
-                    startRef.current = null;
-                }
+                startsRef.current = starts.filter((start) => !coordinateUtils.equals(start, [x, y]));
                 if (end && end[0] === x && end[1] === y) {
                     endRef.current = null;
                 }
@@ -119,18 +119,21 @@ export const AStarDemo = React.memo(() => {
     }, [forceUpdate]);
     const handleFindPathClick = useCallback(() => {
         const map = mapRef.current;
-        const start = startRef.current;
+        const starts = startsRef.current;
         const end = endRef.current;
         const painter = painterRef.current;
-        if (!map || !start || !end || !painter) {
+        if (!map || !starts.length || !end || !painter) {
             return;
         }
-        const { path } = findPath(start, end, map);
-        if (!path) {
-            return;
-        }
-        path.forEach(([from, to]) => {
-            painter.drawPath({ from, to });
+        const vectorField = buildVectorField(end[0], end[1], map);
+        starts.forEach((start) => {
+            const path = vectorField.findPath(start);
+            if (!path) {
+                return;
+            }
+            path.forEach(([from, to]) => {
+                painter.drawPath({ from, to });
+            });
         });
         drawnRef.current = true;
         forceUpdate();
@@ -168,7 +171,7 @@ export const AStarDemo = React.memo(() => {
                     </div>
                 </fieldset>
                 <button
-                    disabled={!startRef.current || !endRef.current || !mapRef.current || drawnRef.current}
+                    disabled={!startsRef.current.length || !endRef.current || !mapRef.current || drawnRef.current}
                     onClick={handleFindPathClick}
                 >
                     Нарисовать путь

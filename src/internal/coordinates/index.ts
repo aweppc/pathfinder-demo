@@ -1,90 +1,101 @@
 import { Predicate } from '../types';
-import { ADJACENT_DIRECTIONS, CARDINAL_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTION_DISTANCES, distancesAreEqual } from './direction';
-import { AdjacencyType, Direction } from './types';
+import { ADJACENT_DIRECTIONS, CARDINAL_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTION_DISTANCES } from './direction';
+import { AdjacencyType, Coordinates, Direction } from './types';
 
-export class Coordinates {
-    static create(x: number, y: number) {
-        return new Coordinates(x, y);
+export type { Coordinates } from './types';
+
+const equals = (a: Coordinates, b: Coordinates) => {
+    const [ax, ay] = a;
+    const [bx, by] = b;
+    return ax === bx && ay === by;
+};
+
+const getDifference = (from: Coordinates, to: Coordinates): Coordinates => {
+    const [fromX, fromY] = from;
+    const [toX, toY] = to;
+    return [toX - fromX, toY - fromY];
+};
+
+const getDistance = (from: Coordinates, to: Coordinates): Coordinates => {
+    const [x, y] = getDifference(from, to);
+    return [Math.abs(x), Math.abs(y)]
+};
+
+const isDiagonal = (from: Coordinates, to: Coordinates) => {
+    const distance = getDifference(from, to);
+    return !!DIAGONAL_DIRECTIONS
+        .find((direction) => equals(DIRECTION_DISTANCES[direction], distance));
+};
+
+const isCardinal = (from: Coordinates, to: Coordinates) => {
+    const distance = getDifference(from, to);
+    return !!CARDINAL_DIRECTIONS
+        .find((direction) => equals(DIRECTION_DISTANCES[direction], distance));
+};
+
+const getDirection = (from: Coordinates, to: Coordinates): Direction | null => {
+    const distance = getDifference(from, to);
+    return ADJACENT_DIRECTIONS
+        .find((direction) => equals(DIRECTION_DISTANCES[direction], distance))
+        ?? null;
+};
+
+const getAdjacencyType = (from: Coordinates, to: Coordinates): AdjacencyType => {
+    switch (true) {
+        case isCardinal(from, to):
+            return 'cardinal';
+        case isDiagonal(from, to):
+            return 'diagonal';
+        default:
+            return 'not adjacent';
     }
+};
 
-    private constructor(private _x: number, private _y: number) {}
+const getAdjacent = (from: Coordinates, direction: Direction): Coordinates => {
+    const [diffX, diffY] = DIRECTION_DISTANCES[direction];
+    const [fromX, fromY] = from;
+    return [fromX + diffX, fromY + diffY];
+};
 
-    get x() {
-        return this._x;
-    }
-
-    get y() {
-        return this._y;
-    }
-
-    getDifferenceTo = (other: Coordinates): [number, number] => {
-        return [other._x - this._x, other._y - this._y];
-    }
-
-    getDistanceTo = (other: Coordinates): [number, number] => {
-        const [x, y] = this.getDifferenceTo(other);
-        return [Math.abs(x), Math.abs(y)]
-    }
-
-    isDiagonalTo = (other: Coordinates) => {
-        const distance = this.getDifferenceTo(other);
-        return !!DIAGONAL_DIRECTIONS
-            .find((direction) => distancesAreEqual(DIRECTION_DISTANCES[direction], distance));
-    }
-
-    isCardinalTo = (other: Coordinates) => {
-        const distance = this.getDifferenceTo(other);
-        return !!CARDINAL_DIRECTIONS
-            .find((direction) => distancesAreEqual(DIRECTION_DISTANCES[direction], distance));
-    }
-
-    getAdjacencyTypeFor = (other: Coordinates): AdjacencyType => {
-        switch (true) {
-            case this.isCardinalTo(other):
-                return 'cardinal';
-            case this.isDiagonalTo(other):
-                return 'diagonal';
-            default:
-                return 'not adjacent';
+const getAllAdjacent = (from: Coordinates, predicate?: Predicate<Coordinates>): Coordinates[] => {
+    let result: Coordinates[] = [];
+    for (let i = 0; i < ADJACENT_DIRECTIONS.length; i++) {
+        const coordinates = getAdjacent(from, ADJACENT_DIRECTIONS[i]);
+        if (!predicate || predicate(...coordinates)) {
+            result.push(coordinates);
         }
     }
+    return result;
+};
 
-    getAdjacent = (direction: Direction) => {
-        const [x, y] = DIRECTION_DISTANCES[direction];
-        return new Coordinates(this._x + x, this._y + y);
-    }
+// линейная интерполяция
+const lerp = (from: Coordinates, to: Coordinates, factor: number): Coordinates => {
+    const [fromX, fromY] = from;
+    const [toX, toY] = to;
+    return [fromX + (toX - fromX) * factor, fromY + (toY - fromY) * factor];
+};
 
-    getAllAdjacent = (predicate?: Predicate<Coordinates>) => {
-        let result: Coordinates[] = [];
-        for (let i = 0; i < ADJACENT_DIRECTIONS.length; i++) {
-            const coordinate = this.getAdjacent(ADJACENT_DIRECTIONS[i]);
-            if (!predicate || predicate(coordinate)) {
-                result.push(coordinate);
-            }
-        }
-        return result;
-    }
+const shift = (from: Coordinates, x: number, y: number): Coordinates => {
+    const [fromX, fromY] = from;
+    return [fromX + x, fromY + y];
+};
 
-    // линейная интерполяция
-    lerpTo = (other: Coordinates, factor: number) => {
-        return new Coordinates(
-            this._x + (other._x - this._x) * factor,
-            this._y + (other._y - this._y) * factor
-        );
-    }
+const toString = (coords: Coordinates) => {
+    const [x, y] = coords;
+    return `[${x}:${y}]`;
+};
 
-    shift = (x: number, y: number) => {
-        return new Coordinates(
-            this._x + x,
-            this._y + y
-        );
-    }
-
-    equals(other: Coordinates) {
-        return this._x === other._x && this._y === other._y;
-    }
-
-    toString() {
-        return `[${this._x}:${this._y}]`;
-    }
-}
+export const coordinateUtils = {
+    equals,
+    getDifference,
+    getDistance,
+    isDiagonal,
+    isCardinal,
+    getDirection,
+    getAdjacencyType,
+    getAdjacent,
+    getAllAdjacent,
+    lerp,
+    shift,
+    toString,
+};

@@ -1,5 +1,5 @@
-import { CoordinateSet } from '../coordinates/coordinate-set';
-import { Coordinates } from '../coordinates';
+import { CoordinateSet } from '../coordinate-set';
+import { coordinateUtils } from '../coordinates';
 import { Predicate } from '../types';
 import { composePredicates } from '../utils';
 import { TileDetails } from './types';
@@ -23,41 +23,38 @@ export class Map {
         this.details.clamp(width, height);
     }
 
-    isWall = (coordinates: Coordinates): boolean => {
-        return !!this.details.get(coordinates)?.blocksPathfinding;
+    isWall = (x: number, y: number): boolean => {
+        return !!this.details.get(x, y)?.blocksPathfinding;
     }
 
     clearWall = (x: number, y: number) => {
-        const coordinates = Coordinates.create(x, y);
-        const current = this.details.get(coordinates);
-        this.details.set(coordinates, { ...current, blocksPathfinding: false });
+        const current = this.details.get(x, y);
+        this.details.set(x, y, { ...current, blocksPathfinding: false });
     }
 
     toggleWall = (x: number, y: number) => {
-        const coordinates = Coordinates.create(x, y);
-        const current = this.details.get(coordinates);
-        this.details.set(coordinates, { ...current, blocksPathfinding: !current?.blocksPathfinding });
+        const current = this.details.get(x, y);
+        this.details.set(x, y, { ...current, blocksPathfinding: !current?.blocksPathfinding });
         return !current?.blocksPathfinding;
     }
 
     getWalls = () => {
         return this.details.getAll()
             .filter(({ value: { blocksPathfinding }}) => blocksPathfinding)
-            .map(({ coordinates: { x, y } }) => ({ x, y }));
+            .map(({ coordinates }) => coordinates);
     }
 
-    private isInBounds = (coordinates: Coordinates): boolean => {
-        const { x, y } = coordinates;
+    isInBounds = (x: number, y: number): boolean => {
         const xInBounds = x >= 0 && x < this.width;
         const yInBounds = y >= 0 && y < this.height;
         return xInBounds && yInBounds;
     }
 
     getAdjacentCoordinates = (
-        coordinates: Coordinates,
-        predicate?: Predicate<Coordinates>
+        from: [number, number],
+        predicate?: Predicate<[number, number]>
     ) => {
         const finalPredicate = composePredicates(this.isInBounds, predicate)
-        return coordinates.getAllAdjacent(finalPredicate);
+        return coordinateUtils.getAllAdjacent(from, finalPredicate);
     }
 }

@@ -1,4 +1,4 @@
-import { ScoreFirstList } from './score-first-list';
+import { ScoreFirstList } from '.';
 
 class NumberList extends ScoreFirstList<number> {
     protected getScore(value: number): number {

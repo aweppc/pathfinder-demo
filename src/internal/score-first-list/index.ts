@@ -42,4 +42,8 @@ export abstract class ScoreFirstList<T> {
     hasNext() {
         return !!this.arr.length;
     }
+
+    getArr() {
+        return this.arr;
+    }
 }
